@@ -619,6 +619,7 @@ select option{background:var(--bg3)}
 // ════════════════════════════════════════════════
 // DATA LAYER — mirrors what a real backend returns
 // ════════════════════════════════════════════════
+const BASE_URL = "https://salon-backend-1-sok8.onrender.com";
 let DB = {
   clients: [],
   bills: [],
@@ -650,21 +651,30 @@ let DB = {
 };
 async function loadBillsFromBackend() {
   try {
-    const BASE_URL = "https://salon-backend-1-sok8.onrender.com";
+    
 	const res = await fetch(`${BASE_URL}/api/bills`);
     const bills = await res.json();
+	console.log("RAW API:", bills);
+	DB.bills = bills.map(b => ({
+  id: b.id,
+  clientName: b.clientName || b.clientname,   // ✅ FIXED
+  total: Number(b.total || 0), 
+  date: (b.date || '').slice(0, 10),          // ✅ FIXED (important)
+  status: b.status || 'Live',
+  payment: b.payment || 'Cash',
+  items: (b.items || [])
+    .filter(i => i !== null)
+    .map(i => ({
+      name: i.service_name,
+      type: 'service',
+      staff: i.staff,
+      price: i.price,
+      discount: i.discount,
+      net: i.final_price
+    }))
+}));
 
-    DB.bills = bills.map(b => ({
-      ...b,
-      items: (b.items || []).map(i => ({
-        name: i.item_name,   // 🔥 FIX HERE
-        type: i.type,
-        staff: i.staff,
-        price: i.price,
-        discount: i.discount,
-        net: i.net
-      }))
-    }));
+   
 
     renderBillsTable();
   } catch (err) {
@@ -765,23 +775,60 @@ function getFilteredBills(){
 }
 
 function renderBillsTable(){
-  filteredBills=getFilteredBills();
-  const tbody=document.getElementById('bills-tbody');
-  tbody.innerHTML=filteredBills.map((b,idx)=>`
-    <tr class="${selectedBillIdx===idx?'selected':''}" onclick="selectBill(${idx})" ondblclick="viewBill(${idx})">
-      <td class="col-billid">${b.id}</td>
-      <td class="col-status"><span class="status-${b.status==='Live'?'live':'cancel'}">${b.status||'Live'}</span></td>
-      <td class="col-client">${b.clientName}</td>
-      <td class="col-date">${fmtDraw(b.date)}</td>
-      <td class="col-svc">${b.items && b.items.length 
-  ? b.items.map(i => i.name || i.item_name).join(', ')  : '-'}</td> 
-      <td class="col-total total-cell">${b.total.toFixed(0)}</td>
-    </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">No bills</td></tr>';
+  filteredBills = getFilteredBills();
+  const tbody = document.getElementById('bills-tbody');
+
+  try {
+    tbody.innerHTML = filteredBills.map((b, idx) => {
+      const services = (b.items || [])
+        .filter(i => i && i.name)
+        .map(i => i.name)
+        .join(', ') || '-';
+
+      const total = Number(b.total || 0).toFixed(0);
+
+      return `
+        <tr class="${selectedBillIdx===idx?'selected':''}" 
+            onclick="selectBill(${idx})" 
+            ondblclick="viewBill(${idx})">
+
+          <td class="col-billid">${b.id}</td>
+
+          <td class="col-status">
+            <span class="status-${b.status==='Live'?'live':'cancel'}">
+              ${b.status || 'Live'}
+            </span>
+          </td>
+
+          <td class="col-client">${b.clientName || '-'}</td>
+
+          <td class="col-date">${fmtDraw(b.date)}</td>
+
+          <td class="col-svc">${services}</td>
+
+          <td class="col-total total-cell">${total}</td>
+
+        </tr>
+      `;
+    }).join('');
+
+    if (!filteredBills.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align:center;color:var(--text3);padding:20px">
+            No bills
+          </td>
+        </tr>`;
+    }
+
+  } catch (err) {
+    console.error("RENDER ERROR:", err);
+  }
+
   updateTableFooter();
   updateSummaryBar();
   updateStatsPanel();
 }
-
 let selectedBillIdx=-1;
 function selectBill(idx){selectedBillIdx=idx;renderBillsTable()}
 function viewBill(idx){
@@ -959,61 +1006,64 @@ function nbRecalc(){
   document.getElementById('nb-total').textContent=fmt2(total);
 }
 async function saveNewBill() {
-  const clientName =
-    nbSelClient?.name || document.getElementById('nb-nc-name').value;
+  try {
+    const clientName =
+      nbSelClient?.name || document.getElementById('nb-nc-name').value;
 
-  const payment = document.getElementById('nb-pay').value;
+    const payment = document.getElementById('nb-pay').value;
 
-  const items = [];
+    const items = [];
 
-  document.querySelectorAll('#nb-items .bill-item-row').forEach(row => {
-    const name = row.querySelector('select').value;
-    const staff = row.querySelectorAll('select')[1].value;
+    document.querySelectorAll('#nb-items .bill-item-row').forEach(row => {
+      const name = row.querySelector('select').value;
+      const staff = row.querySelectorAll('select')[1].value;
 
-    const price = parseFloat(row.querySelector('.nbi-p').value || 0);
-    const discount = parseFloat(row.querySelector('.nbi-d').value || 0);
-    const net = price - (price * discount / 100);
+      const price = parseFloat(row.querySelector('.nbi-p').value || 0);
+      const discount = parseFloat(row.querySelector('.nbi-d').value || 0);
+      const net = price - (price * discount / 100);
 
-    items.push({
-      name,
-      type: row.dataset.type || 'service',
-      staff,
-      price,
-      discount,
-      net
+      items.push({
+        service_name: name,
+        staff,
+        price,
+        discount,
+        final_price: net
+      });
     });
-  });
 
-  const total = items.reduce((sum, i) => sum + i.net, 0);
+    const total = items.reduce((sum, i) => sum + i.final_price, 0);
 
-  const bill = {
-    clientName,
-    date: new Date().toISOString().slice(0, 10),
-    total,
-    payment,
-    status: 'Live',
-    items
-  };
+    console.log("Payload:", { clientName, total, items });
 
-  
-  const BASE_URL = "https://salon-backend-1-sok8.onrender.com";
+    const res = await fetch(`${BASE_URL}/api/bills`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientName,
+        client_id: null,
+        total,
+        items
+      })
+    });
 
-fetch(`${BASE_URL}/api/bills`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify(data)
-});
+    const data = await res.json();
 
-  const data = await res.json();
+    console.log("Saved:", data);
 
-  if (data.success) {
-    alert("Bill saved with items");
-    loadBillsFromBackend();
+    if (data.success) {
+      alert("Bill saved successfully");
+
+      closeModal('modal-new-bill');
+
+      // 🔥 CRITICAL FIX
+      await loadBillsFromBackend();   // <-- THIS WAS YOUR MISSING PIECE
+    }
+
+  } catch (err) {
+    console.error("SAVE ERROR:", err);
+    alert("Error saving bill");
   }
 }
-
 
 // ════════════════════════════════════════════════
 // CLIENTS PAGE
