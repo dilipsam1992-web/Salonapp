@@ -650,7 +650,8 @@ let DB = {
 };
 async function loadBillsFromBackend() {
   try {
-    const res = await fetch('http://localhost:3002/api/bills');
+    const BASE_URL = "https://salon-backend-1-sok8.onrender.com";
+	const res = await fetch(`${BASE_URL}/api/bills`);
     const bills = await res.json();
 
     DB.bills = bills.map(b => ({
@@ -994,11 +995,16 @@ async function saveNewBill() {
     items
   };
 
-  const res = await fetch('http://localhost:3002/api/bills', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(bill)
-  });
+  
+  const BASE_URL = "https://salon-backend-1-sok8.onrender.com";
+
+fetch(`${BASE_URL}/api/bills`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(data)
+});
 
   const data = await res.json();
 
