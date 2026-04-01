@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glamour Studio — Salon Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--bg4:#242d3f;
+  --border:#2a3349;--border2:#364160;
+  --rose:#e05c6b;--rose2:#c2435a;--rose-glow:rgba(224,92,107,0.15);
+  --gold:#d4a843;--gold-bg:rgba(212,168,67,0.1);
+  --green:#3db87a;--green-bg:rgba(61,184,122,0.1);
+  --blue:#4d9de0;--blue-bg:rgba(77,157,224,0.1);
+  --amber:#f5a623;--amber-bg:rgba(245,166,35,0.1);
+  --text:#e8eaf0;--text2:#9ba3b8;--text3:#5c6480;
+  --r:6px;--rl:10px;
+  --sh:0 4px 20px rgba(0,0,0,0.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.4;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+
+/* ── Top Menu Bar ── */
+.menubar{background:var(--bg3);border-bottom:1px solid var(--border);padding:0 12px;height:32px;display:flex;align-items:center;gap:0;flex-shrink:0}
+.menu-item{padding:0 12px;height:32px;display:flex;align-items:center;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;border-radius:4px}
+.menu-item:hover{background:var(--bg4);color:var(--text)}
+
+/* ── Icon Toolbar ── */
+.toolbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:6px 12px;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.tb-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 10px;border-radius:var(--r);cursor:pointer;transition:all .15s;min-width:52px;border:1px solid transparent}
+.tb-btn:hover{background:var(--bg4);border-color:var(--border)}
+.tb-btn.active{background:var(--rose-glow);border-color:var(--rose);color:var(--rose)}
+.tb-btn .icon{font-size:18px}
+.tb-btn .label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.tb-sep{width:1px;height:40px;background:var(--border);margin:0 4px}
+.logged-as{margin-left:auto;font-size:11px;color:var(--text3)}
+.logged-as span{color:var(--gold)}
+
+/* ── Search bar under toolbar ── */
+.searchbar{background:var(--bg3);border-bottom:1px solid var(--border);padding:5px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.searchbar input{background:var(--bg4);border:1px solid var(--border2);border-radius:var(--r);padding:4px 10px;color:var(--text);font-family:'Sora',sans-serif;font-size:12px;width:260px}
+.searchbar input:focus{outline:none;border-color:var(--rose)}
+.searchbar button{background:var(--bg4);border:1px solid var(--border2);border-radius:var(--r);padding:4px 14px;color:var(--text2);cursor:pointer;font-size:12px;font-family:'Sora',sans-serif}
+.searchbar button:hover{border-color:var(--rose);color:var(--text)}
+
+/* ── Main layout ── */
+.main-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.sidebar{width:44px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding-top:8px;gap:2px;flex-shrink:0}
+.content-area{display:flex;flex:1;overflow:hidden}
+.right-pane{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── Sidebar tabs ── */
+.sb-tab{width:36px;height:36px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text3);transition:all .15s;border:1px solid transparent}
+.sb-tab:hover{background:var(--bg4);color:var(--text2)}
+.sb-tab.active{background:var(--rose-glow);border-color:var(--rose);color:var(--rose)}
+
+/* ── Bills Section (TOP half) ── */
+.bills-section{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.section-header{padding:6px 12px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:11px;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
+.section-title{color:var(--text2);font-weight:500;font-size:12px}
+
+/* ── Bills Table ── */
+.table-wrap{flex:1;overflow:auto}
+.bills-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.bills-table th{background:var(--bg3);border-bottom:2px solid var(--border2);border-right:1px solid var(--border);padding:7px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.3px;cursor:pointer;user-select:none;white-space:nowrap;position:sticky;top:0;z-index:10}
+.bills-table th:hover{background:var(--bg4);color:var(--text)}
+.bills-table th .sort-arrow{margin-left:4px;opacity:.4;font-size:10px}
+.bills-table td{padding:5px 10px;border-bottom:1px solid var(--border);border-right:1px solid rgba(42,51,73,.5);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bills-table tr:hover td{background:var(--bg4)}
+.bills-table tr.selected td{background:rgba(224,92,107,.08);border-left:2px solid var(--rose)}
+.bills-table td.total-cell{text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:var(--green)}
+.status-live{color:var(--green);font-size:11px;font-weight:500}
+.status-cancel{color:var(--rose);font-size:11px}
+/* col widths */
+.col-billid{width:70px}.col-status{width:70px}.col-client{width:180px}
+.col-date{width:100px}.col-svc{width:260px}.col-total{width:80px}
+
+/* ── Stats bar at very bottom of table ── */
+.table-footer{background:var(--bg3);border-top:1px solid var(--border2);padding:4px 10px;display:flex;align-items:center;gap:24px;font-size:11px;color:var(--text3)}
+.table-footer span{font-family:'DM Mono',monospace;color:var(--amber)}
+
+/* ── Resizer between top and bottom ── */
+.resizer{height:5px;background:var(--bg3);border-top:1px solid var(--border);border-bottom:1px solid var(--border);cursor:row-resize;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.resizer::after{content:'';width:40px;height:2px;background:var(--border2);border-radius:2px}
+
+/* ── Bottom Stats Section ── */
+.stats-section{flex-shrink:0;background:var(--bg2);overflow:hidden;display:flex;flex-direction:column}
+.stats-panels{display:flex;gap:0;overflow-x:auto;flex:1;padding:10px 12px;gap:10px}
+
+/* Date Range Panel */
+.panel{background:var(--bg3);border:1px solid var(--border);border-radius:var(--rl);padding:10px 12px;min-width:0}
+.panel-title{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:8px;font-weight:600}
+.radio-group{display:flex;flex-direction:column;gap:4px}
+.radio-row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer}
+.radio-row input[type=radio]{accent-color:var(--rose);cursor:pointer}
+.radio-row.active-row{color:var(--text)}
+.date-input-row{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:11px;color:var(--text3)}
+.date-input-row input[type=date]{background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:3px 6px;color:var(--text);font-size:11px;font-family:'Sora',sans-serif;width:110px}
+.date-input-row input[type=date]:focus{outline:none;border-color:var(--rose)}
+.view-btn{margin-top:8px;background:var(--rose);border:none;border-radius:var(--r);padding:5px 16px;color:#fff;font-family:'Sora',sans-serif;font-size:12px;font-weight:500;cursor:pointer;width:100%;transition:background .15s}
+.view-btn:hover{background:var(--rose2)}
+
+/* Sale Value Panel */
+.sale-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(42,51,73,.6)}
+.sale-row:last-child{border-bottom:none;padding-top:5px;margin-top:2px}
+.sale-label{font-size:11px;color:var(--text2)}
+.sale-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--text);font-weight:500}
+.sale-val.green{color:var(--green)}.sale-val.rose{color:var(--rose)}.sale-val.amber{color:var(--amber)}
+
+/* Type Panel */
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+.type-item{display:flex;justify-content:space-between;align-items:center;padding:2px 0}
+.type-label{font-size:11px;color:var(--text3)}
+.type-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--blue);font-weight:500}
+
+/* Sales Panel */
+.sales-grid{display:flex;flex-direction:column;gap:3px}
+.sales-item{display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-bottom:1px solid rgba(42,51,73,.4)}
+.sales-item:last-child{border:none}
+.sales-key{color:var(--text3)}.sales-val{font-family:'DM Mono',monospace;color:var(--amber)}
+
+/* ── Right-click context menu ── */
+.ctx-menu{position:fixed;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);box-shadow:var(--sh);z-index:9999;min-width:160px;padding:4px 0;display:none}
+.ctx-menu.visible{display:block}
+.ctx-item{padding:7px 14px;font-size:12px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .12s}
+.ctx-item:hover{background:var(--bg4);color:var(--text)}
+.ctx-item.active{color:var(--rose)}
+.ctx-sep{height:1px;background:var(--border);margin:3px 0}
+.ctx-icon{font-size:14px;width:16px;text-align:center}
+.ctx-submenu-arrow{margin-left:auto;opacity:.5;font-size:10px}
+
+/* ── Summary highlight bar ── */
+.summary-bar{padding:3px 10px;background:var(--bg4);border-top:1px solid var(--border);font-size:11px;color:var(--text3);display:flex;gap:20px;font-family:'DM Mono',monospace;min-height:24px}
+.sum-item{display:flex;align-items:center;gap:5px}
+.sum-key{color:var(--text3)}.sum-val{color:var(--gold);font-weight:500}
+
+/* ── Modals ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rl);width:640px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:var(--sh)}
+.modal-hd{padding:14px 18px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-hd h3{font-size:16px;font-weight:500}
+.modal-bd{padding:16px 18px}
+.modal-ft{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.close-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);line-height:1}
+.close-btn:hover{color:var(--text)}
+
+/* ── Form ── */
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg.full{grid-column:1/-1}
+label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:500}
+input,select,textarea{background:var(--bg4);border:1px solid var(--border2);border-radius:var(--r);padding:7px 10px;color:var(--text);font-family:'Sora',sans-serif;font-size:12px;width:100%;transition:border .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--rose)}
+select option{background:var(--bg3)}
+
+/* ── Buttons ── */
+.btn{border:none;cursor:pointer;font-family:'Sora',sans-serif;font-size:12px;font-weight:500;border-radius:var(--r);padding:7px 16px;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:var(--rose);color:#fff}.btn-primary:hover{background:var(--rose2)}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2)}.btn-outline:hover{border-color:var(--rose);color:var(--text)}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-ghost{background:transparent;border:none;color:var(--text3);padding:4px 8px}.btn-ghost:hover{color:var(--text)}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-rose{background:var(--rose-glow);color:var(--rose)}
+.badge-gold{background:var(--gold-bg);color:var(--gold)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+
+/* ── New Bill Modal ── */
+.bill-items-hd{display:grid;grid-template-columns:2.2fr 1fr 80px 60px 30px;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)}
+.bill-item-row{display:grid;grid-template-columns:2.2fr 1fr 80px 60px 30px;gap:8px;align-items:center;margin-bottom:6px}
+.bill-total-box{background:var(--bg4);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-top:12px}
+.btrow{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
+.btrow.grand{font-weight:600;font-size:15px;border-top:1px solid var(--border2);padding-top:7px;margin-top:4px;color:var(--gold)}
+
+/* ── Day close ── */
+.dayclose-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dc-card{background:var(--bg4);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.dc-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:5px}
+.dc-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:var(--text)}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 16px;border-radius:var(--r);font-size:12px;z-index:3000;transform:translateY(50px);opacity:0;transition:all .22s;box-shadow:var(--sh);border-left:3px solid var(--rose)}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ── Client search dropdown ── */
+.csearch-drop{position:absolute;z-index:200;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);box-shadow:var(--sh);max-height:180px;overflow-y:auto;width:100%}
+.csearch-item{padding:7px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)}
+.csearch-item:hover{background:var(--bg4)}
+.csearch-item .cs-name{color:var(--text);font-weight:500}
+.csearch-item .cs-sub{font-size:11px;color:var(--text3)}
+.field-wrap{position:relative}
+
+/* ── Bill receipt preview ── */
+.receipt{background:#fff;color:#111;border-radius:var(--r);padding:20px;max-width:360px;margin:0 auto;font-family:'DM Mono',monospace;font-size:12px}
+.receipt-logo{text-align:center;font-family:'Sora',sans-serif;font-size:20px;font-weight:600;color:#B5616A;margin-bottom:2px}
+.receipt-addr{text-align:center;font-size:10px;color:#888;margin-bottom:12px}
+.receipt-divider{border:none;border-top:1px dashed #ccc;margin:8px 0}
+.receipt-row{display:flex;justify-content:space-between;padding:2px 0;font-size:12px}
+.receipt-total{font-size:15px;font-weight:700}
+
+/* ── Page sections ── */
+.page{display:none}.page.active{display:flex;flex-direction:column;flex:1;overflow:hidden}
+
+/* ── Clients page ── */
+.page-clients{padding:12px}
+.page-staff{padding:12px}
+.page-services{padding:12px}
+
+/* ── Splitter drag ── */
+.bills-section{transition:none}
+</style>
+</head>
+<body>
+
+<!-- ══ MENU BAR ══ -->
+<div class="menubar">
+  <div class="menu-item" onclick="showMenu('dashboard')">Dashboard</div>
+  <div class="menu-item" onclick="openModal('modal-new-bill')">Bills</div>
+  <div class="menu-item" onclick="showPage('clients')">Clients</div>
+  <div class="menu-item">Products</div>
+  <div class="menu-item" onclick="showPage('services')">Services</div>
+  <div class="menu-item" onclick="showPage('staff')">Employee</div>
+  <div class="menu-item">Scheduling</div>
+  <div class="menu-item" onclick="openModal('modal-dayclose')">DayClose</div>
+  <div class="menu-item" onclick="openModal('modal-dayclose')">Utilities</div>
+  <div class="menu-item">Help</div>
+  <div class="logged-as">Logged as: <span>'MANAGER'</span></div>
+</div>
+
+<!-- ══ ICON TOOLBAR ══ -->
+<div class="toolbar">
+  <div class="tb-btn active" onclick="showPage('bills')"><span class="icon">🧾</span><span class="label">Bills</span></div>
+  <div class="tb-btn" onclick="showPage('clients')"><span class="icon">👥</span><span class="label">Clients</span></div>
+  <div class="tb-btn" onclick="showPage('products')"><span class="icon">📦</span><span class="label">Products</span></div>
+  <div class="tb-btn" onclick="showPage('services')"><span class="icon">✂️</span><span class="label">Services</span></div>
+  <div class="tb-btn" onclick="showPage('staff')"><span class="icon">👤</span><span class="label">Employee</span></div>
+  <div class="tb-sep"></div>
+  <div class="tb-btn" onclick="openModal('modal-new-bill')"><span class="icon">➕</span><span class="label">New Bill</span></div>
+  <div class="tb-btn" onclick="openModal('modal-dayclose')"><span class="icon">🔒</span><span class="label">DayClose</span></div>
+  <div class="tb-btn" onclick="window.print()"><span class="icon">🖨️</span><span class="label">Print</span></div>
+</div>
+
+<!-- ══ SEARCH BAR ══ -->
+<div class="searchbar">
+  <input id="global-search" type="text" placeholder="Enter text to search..." oninput="globalSearch()">
+  <button onclick="globalSearch()">Find</button>
+  <button onclick="document.getElementById('global-search').value='';renderBillsTable()">Clear</button>
+</div>
+
+<!-- ══ CONTENT AREA ══ -->
+<div class="main-wrap">
+  <div class="content-area">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sb-tab active" title="Bills" onclick="showPage('bills')">🧾</div>
+      <div class="sb-tab" title="Clients" onclick="showPage('clients')">👥</div>
+      <div class="sb-tab" title="Staff" onclick="showPage('staff')">👤</div>
+      <div class="sb-tab" title="Services" onclick="showPage('services')">✂️</div>
+    </div>
+
+    <!-- Right Pane — Pages -->
+    <div class="right-pane">
+
+      <!-- ══ BILLS PAGE ══ -->
+      <div id="page-bills" class="page active">
+
+        <!-- TOP HALF: Bills Table -->
+        <div class="bills-section" id="bills-top" style="height:52%">
+          <div class="section-header">
+            <span class="section-title">📋 Drag a column header here to group by that column</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span id="top-count-bar" style="font-size:11px;color:var(--text3)"></span>
+              <button class="btn btn-sm btn-outline" onclick="openModal('modal-new-bill')">+ New Bill</button>
+            </div>
+          </div>
+          <div class="table-wrap" id="bills-table-wrap">
+            <table class="bills-table" id="bills-table">
+              <thead>
+                <tr>
+                  <th class="col-billid" onclick="sortBills('id')">BillId <span class="sort-arrow" id="sort-id">↕</span></th>
+                  <th class="col-status" onclick="sortBills('status')">Status <span class="sort-arrow">↕</span></th>
+                  <th class="col-client" onclick="sortBills('clientName')">ClientName <span class="sort-arrow">↕</span></th>
+                  <th class="col-date" onclick="sortBills('date')">Date <span class="sort-arrow">↕</span></th>
+                  <th class="col-svc" onclick="sortBills('service')">Service / Product <span class="sort-arrow">↕</span></th>
+                  <th class="col-total" onclick="sortBills('total')" style="text-align:right">Total <span class="sort-arrow">↕</span></th>
+                </tr>
+              </thead>
+              <tbody id="bills-tbody"></tbody>
+            </table>
+          </div>
+          <div class="summary-bar" id="summary-bar">
+            <span style="color:var(--text3);font-size:11px">Right-click on Total column for summary options</span>
+          </div>
+          <div class="table-footer" id="table-footer">
+            <span id="tf-count">Count: 0</span>
+            <span id="tf-avg">AVG = 0.00</span>
+          </div>
+        </div>
+
+        <!-- Resizer -->
+        <div class="resizer" id="resizer"></div>
+
+        <!-- BOTTOM HALF: Stats & Date Range -->
+        <div class="stats-section" id="bills-bottom" style="flex:1">
+          <div class="section-header">
+            <span class="section-title">📊 Bill's Date Range &amp; Sales Summary</span>
+          </div>
+          <div class="stats-panels">
+
+            <!-- Date Range Panel -->
+            <div class="panel" style="min-width:210px">
+              <div class="panel-title">Bill's Date Range</div>
+              <div class="radio-group">
+                <label class="radio-row active-row"><input type="radio" name="daterange" value="today" checked onchange="applyDateRange()"> Today's Bills</label>
+                <label class="radio-row"><input type="radio" name="daterange" value="yesterday" onchange="applyDateRange()"> Yesterday's Bills</label>
+                <label class="radio-row"><input type="radio" name="daterange" value="all" onchange="applyDateRange()"> All Dates</label>
+                <label class="radio-row"><input type="radio" name="daterange" value="cancelled" onchange="applyDateRange()"> Today's Cancelled</label>
+                <label class="radio-row" id="range-row"><input type="radio" name="daterange" value="range" onchange="applyDateRange()"> Range</label>
+                <label class="radio-row"><input type="radio" name="daterange" value="single" onchange="applyDateRange()"> Single</label>
+              </div>
+              <div class="date-input-row" id="date-inputs" style="display:none">
+                <span>From</span><input type="date" id="from-date">
+                <span>To</span><input type="date" id="to-date">
+              </div>
+              <div class="date-input-row" id="single-date-input" style="display:none">
+                <span>Date</span><input type="date" id="single-date">
+              </div>
+              <button class="view-btn" onclick="applyDateRange()">View</button>
+            </div>
+
+            <!-- Total Sale Value -->
+            <div class="panel" style="min-width:170px">
+              <div class="panel-title">Total Sale Value</div>
+              <div class="sale-row"><span class="sale-label">Gross Sale</span><span class="sale-val green" id="gross-sale">0.00</span></div>
+              <div class="sale-row"><span class="sale-label">Net Sale</span><span class="sale-val green" id="net-sale">0.00</span></div>
+              <div class="sale-row"><span class="sale-label">Advacash</span><span class="sale-val" id="advacash">0</span></div>
+              <div class="sale-row"><span class="sale-label">Advacard</span><span class="sale-val" id="advacard">0</span></div>
+            </div>
+
+            <!-- Payment Type -->
+            <div class="panel" style="min-width:210px">
+              <div class="panel-title">Type</div>
+              <div class="type-grid">
+                <div class="type-item"><span class="type-label">Cash in Hand</span><span class="type-val" id="t-cash">0</span></div>
+                <div class="type-item"><span class="type-label">Card Swiped</span><span class="type-val" id="t-card">0</span></div>
+                <div class="type-item"><span class="type-label">Ewallet</span><span class="type-val" id="t-ewallet">0</span></div>
+                <div class="type-item"><span class="type-label">TotAdvAmt</span><span class="type-val" id="t-adv">0</span></div>
+                <div class="type-item"><span class="type-label">UPI</span><span class="type-val" id="t-upi">0</span></div>
+                <div class="type-item"><span class="type-label">NetBanking</span><span class="type-val" id="t-nb">0</span></div>
+              </div>
+            </div>
+
+            <!-- Sales Panel -->
+            <div class="panel" style="min-width:180px">
+              <div class="panel-title">Sales</div>
+              <div class="sales-grid">
+                <div class="sales-item"><span class="sales-key">S.NETSALE</span><span class="sales-val" id="s-netsale">0</span></div>
+                <div class="sales-item"><span class="sales-key">S.GROSSSALE</span><span class="sales-val" id="s-grosssale">0</span></div>
+                <div class="sales-item"><span class="sales-key">P.NETSALE</span><span class="sales-val" id="p-netsale">0</span></div>
+                <div class="sales-item"><span class="sales-key">P.GROSSSALE</span><span class="sales-val" id="p-grosssale">0</span></div>
+              </div>
+            </div>
+
+            <!-- Indulge Card Sales -->
+            <div class="panel" style="min-width:160px">
+              <div class="panel-title">Indulge Card Sales</div>
+              <div class="sales-grid">
+                <div class="sales-item"><span class="sales-key">Gr.Sale</span><span class="sales-val" id="ic-grsale">0</span></div>
+                <div class="sales-item"><span class="sales-key">Net Sale</span><span class="sales-val" id="ic-netsale">0</span></div>
+                <div class="sales-item"><span class="sales-key">IC.Cash</span><span class="sales-val" id="ic-cash">0</span></div>
+                <div class="sales-item"><span class="sales-key">IC.Card</span><span class="sales-val" id="ic-card">0</span></div>
+              </div>
+            </div>
+
+            <!-- Prepaid Sales -->
+            <div class="panel" style="min-width:150px">
+              <div class="panel-title">Prepaid Sales</div>
+              <div class="sales-grid">
+                <div class="sales-item"><span class="sales-key">Gr.Sale</span><span class="sales-val" id="pr-grsale">0</span></div>
+                <div class="sales-item"><span class="sales-key">Net Sale</span><span class="sales-val" id="pr-netsale">0</span></div>
+                <div class="sales-item"><span class="sales-key">Pr.Cash</span><span class="sales-val" id="pr-cash">0</span></div>
+                <div class="sales-item"><span class="sales-key">Pr.Card</span><span class="sales-val" id="pr-card">0</span></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div><!-- /page-bills -->
+
+      <!-- ══ CLIENTS PAGE ══ -->
+      <div id="page-clients" class="page">
+        <div class="page-clients" style="flex:1;overflow-y:auto">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h2 style="font-size:15px;font-weight:500">Client Database</h2>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-client')">+ Add Client</button>
+          </div>
+          <input type="text" placeholder="Search clients..." id="client-search-q" oninput="filterClientsPage()" style="max-width:260px;margin-bottom:10px">
+          <div style="overflow-x:auto">
+            <table class="bills-table" style="width:100%">
+              <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Visits</th><th>Total Spent</th><th>Last Visit</th><th>Fav Service</th><th></th></tr></thead>
+              <tbody id="clients-page-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ STAFF PAGE ══ -->
+      <div id="page-staff" class="page">
+        <div class="page-staff" style="flex:1;overflow-y:auto">
+          <h2 style="font-size:15px;font-weight:500;margin-bottom:12px">Staff Sales</h2>
+          <div id="staff-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
+        </div>
+      </div>
+
+      <!-- ══ SERVICES PAGE ══ -->
+      <div id="page-services" class="page">
+        <div class="page-services" style="flex:1;overflow-y:auto">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h2 style="font-size:15px;font-weight:500">Services Catalog</h2>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-svc')">+ Add Service</button>
+          </div>
+          <table class="bills-table" style="width:100%">
+            <thead><tr><th>Service</th><th>Category</th><th>Price ₹</th><th>Duration</th><th>Used</th><th></th></tr></thead>
+            <tbody id="svcs-page-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ PRODUCTS PAGE ══ -->
+      <div id="page-products" class="page">
+        <div style="padding:12px;flex:1;overflow-y:auto">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h2 style="font-size:15px;font-weight:500">Products Catalog</h2>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-prd')">+ Add Product</button>
+          </div>
+          <table class="bills-table" style="width:100%">
+            <thead><tr><th>Product</th><th>Brand</th><th>Category</th><th>Price ₹</th><th>Stock</th><th>Sold</th><th></th></tr></thead>
+            <tbody id="prds-page-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /right-pane -->
+  </div><!-- /content-area -->
+</div><!-- /main-wrap -->
+
+<!-- ══ RIGHT-CLICK CONTEXT MENU ══ -->
+<div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-item" id="ctx-sum" onclick="setSummary('sum')"><span class="ctx-icon">Σ</span> Sum</div>
+  <div class="ctx-item" id="ctx-min" onclick="setSummary('min')"><span class="ctx-icon">↓</span> Min</div>
+  <div class="ctx-item" id="ctx-max" onclick="setSummary('max')"><span class="ctx-icon">↑</span> Max</div>
+  <div class="ctx-item" id="ctx-count" onclick="setSummary('count')"><span class="ctx-icon">N</span> Count</div>
+  <div class="ctx-item" id="ctx-avg" onclick="setSummary('avg')"><span class="ctx-icon">x̄</span> Average</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="setSummary('none')"><span class="ctx-icon">—</span> None</div>
+</div>
+
+<!-- ══ MODALS ══ -->
+
+<!-- New Bill -->
+<div class="modal-overlay" id="modal-new-bill">
+  <div class="modal" style="width:720px">
+    <div class="modal-hd"><h3>New Bill</h3><button class="close-btn" onclick="closeModal('modal-new-bill')">×</button></div>
+    <div class="modal-bd">
+      <!-- Client search -->
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <div class="field-wrap" style="flex:1">
+          <label>Client</label>
+          <input id="nb-client-search" type="text" placeholder="Search client by name or phone…" oninput="nbSearchClient()" autocomplete="off">
+          <div class="csearch-drop" id="nb-client-drop" style="display:none"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label>&nbsp;</label>
+          <button class="btn btn-outline btn-sm" onclick="toggleNBNewClient()" style="white-space:nowrap">+ Walk-in / New</button>
+        </div>
+      </div>
+      <div id="nb-selected-client" style="display:none;background:var(--bg4);border:1px solid var(--green);border-radius:var(--r);padding:8px 12px;margin-bottom:12px;font-size:12px">
+        <div style="display:flex;justify-content:space-between">
+          <div><span style="color:var(--green);font-weight:500" id="nb-sc-name"></span> · <span style="color:var(--text3)" id="nb-sc-info"></span></div>
+          <button class="btn-ghost btn-sm" onclick="clearNBClient()" style="font-size:16px;line-height:1">×</button>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px" id="nb-sc-hist"></div>
+      </div>
+      <div id="nb-new-client-form" style="display:none;background:var(--bg4);border-radius:var(--r);padding:12px;margin-bottom:12px">
+        <div class="fg2">
+          <div class="fg"><label>Name *</label><input id="nb-nc-name" placeholder="Client name"></div>
+          <div class="fg"><label>Phone *</label><input id="nb-nc-phone" placeholder="+91…"></div>
+          <div class="fg"><label>Email</label><input id="nb-nc-email" placeholder="email@example.com"></div>
+          <div class="fg"><label>Address</label><input id="nb-nc-addr" placeholder="Address"></div>
+        </div>
+      </div>
+
+      <!-- Items -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <label style="font-size:11px">Services &amp; Products</label>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-outline" onclick="addNBItem('service')">+ Service</button>
+          <button class="btn btn-sm btn-outline" onclick="addNBItem('product')">+ Product</button>
+        </div>
+      </div>
+      <div class="bill-items-hd"><div>Item</div><div>Staff</div><div>Price ₹</div><div>Disc%</div><div></div></div>
+      <div id="nb-items"></div>
+
+      <div class="bill-total-box">
+        <div class="btrow"><span>Subtotal</span><span id="nb-sub">₹0.00</span></div>
+        <div class="btrow"><span>Discount</span><span id="nb-disc" style="color:var(--rose)">- ₹0.00</span></div>
+        <div class="btrow"><span id="nb-gst-lbl">GST (18%)</span><span id="nb-gst">₹0.00</span></div>
+        <div class="btrow grand"><span>Total</span><span id="nb-total">₹0.00</span></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px">
+        <div class="fg"><label>Payment</label>
+          <select id="nb-pay"><option>Cash</option><option>UPI</option><option>Card</option><option>Ewallet</option><option>NetBanking</option></select>
+        </div>
+        <div class="fg"><label>GST Rate</label>
+          <select id="nb-gst-rate" onchange="nbRecalc()"><option value="0">0%</option><option value="5">5%</option><option value="12">12%</option><option value="18" selected>18%</option></select>
+        </div>
+        <div class="fg"><label>Notes</label><input id="nb-notes" placeholder="Optional…"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-new-bill')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewBill()">✦ Save Bill</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Client -->
+<div class="modal-overlay" id="modal-add-client">
+  <div class="modal">
+    <div class="modal-hd"><h3>Add New Client</h3><button class="close-btn" onclick="closeModal('modal-add-client')">×</button></div>
+    <div class="modal-bd">
+      <div class="fg2">
+        <div class="fg"><label>Full Name *</label><input id="ac-name" placeholder="Name"></div>
+        <div class="fg"><label>Phone *</label><input id="ac-phone" placeholder="+91…"></div>
+        <div class="fg"><label>Email</label><input id="ac-email" placeholder="email"></div>
+        <div class="fg"><label>DOB</label><input id="ac-dob" type="date"></div>
+        <div class="fg full"><label>Address</label><input id="ac-addr" placeholder="Address"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-add-client')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveClient()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Service -->
+<div class="modal-overlay" id="modal-add-svc">
+  <div class="modal">
+    <div class="modal-hd"><h3>Add Service</h3><button class="close-btn" onclick="closeModal('modal-add-svc')">×</button></div>
+    <div class="modal-bd">
+      <div class="fg2">
+        <div class="fg"><label>Name *</label><input id="sv-name" placeholder="Service name"></div>
+        <div class="fg"><label>Category</label><select id="sv-cat"><option>Hair</option><option>Skin</option><option>Nails</option><option>Waxing</option><option>Makeup</option><option>Threading</option><option>Other</option></select></div>
+        <div class="fg"><label>Price ₹ *</label><input id="sv-price" type="number"></div>
+        <div class="fg"><label>Duration (mins)</label><input id="sv-dur" type="number" value="30"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-add-svc')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSvc()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Product -->
+<div class="modal-overlay" id="modal-add-prd">
+  <div class="modal">
+    <div class="modal-hd"><h3>Add Product</h3><button class="close-btn" onclick="closeModal('modal-add-prd')">×</button></div>
+    <div class="modal-bd">
+      <div class="fg2">
+        <div class="fg"><label>Name *</label><input id="pv-name" placeholder="Product name"></div>
+        <div class="fg"><label>Brand</label><input id="pv-brand" placeholder="Brand"></div>
+        <div class="fg"><label>Price ₹ *</label><input id="pv-price" type="number"></div>
+        <div class="fg"><label>Stock</label><input id="pv-stock" type="number" value="0"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-add-prd')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePrd()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Day Close -->
+<div class="modal-overlay" id="modal-dayclose">
+  <div class="modal">
+    <div class="modal-hd"><h3>🔒 Day Close Report — <span id="dc-date"></span></h3><button class="close-btn" onclick="closeModal('modal-dayclose')">×</button></div>
+    <div class="modal-bd" id="dc-body"></div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-dayclose')">Close</button>
+      <button class="btn btn-primary" onclick="window.print()">Print Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bill Detail -->
+<div class="modal-overlay" id="modal-bill-detail">
+  <div class="modal">
+    <div class="modal-hd"><h3>Bill Details</h3><button class="close-btn" onclick="closeModal('modal-bill-detail')">×</button></div>
+    <div class="modal-bd" id="bill-detail-body"></div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-bill-detail')">Close</button>
+      <button class="btn btn-primary" onclick="window.print()">Print</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════
+// DATA LAYER — mirrors what a real backend returns
+// ════════════════════════════════════════════════
+let DB = {
+  clients: [],
+  bills: [],
+  services: [
+    {id:1,name:'HAIR CUT/SHAVE',category:'Hair',price:148,duration:30},
+    {id:2,name:'HAIR CUT',category:'Hair',price:99,duration:20},
+    {id:3,name:'SHAVE',category:'Hair',price:49,duration:15},
+    {id:4,name:'CHANGE OF STYLE',category:'Hair',price:199,duration:45},
+    {id:5,name:'KIDS CUT',category:'Hair',price:99,duration:20},
+    {id:6,name:'HAIRCUT & SHAVE',category:'Hair',price:149,duration:30},
+    {id:7,name:'HAIRCUT & TRIM',category:'Hair',price:169,duration:35},
+    {id:8,name:'COMBO @ 799/HAIR CUT',category:'Hair',price:898,duration:60},
+    {id:9,name:'BEARD SHAPE UP',category:'Hair',price:70,duration:15},
+    {id:10,name:'HAIR LOSS HAIR SPA',category:'Skin',price:749,duration:60},
+    {id:11,name:'HALF HAND BLEACH',category:'Skin',price:149,duration:30},
+    {id:12,name:'FACIAL (BASIC)',category:'Skin',price:800,duration:60},
+  ],
+  products: [
+    {id:101,name:"L'Oreal Keratin Shampoo",brand:"L'Oreal",category:'Hair Care',price:850,stock:12,sold:0},
+    {id:102,name:'Matrix Hair Serum',brand:'Matrix',category:'Hair Care',price:650,stock:15,sold:0},
+  ],
+  staff: [
+    {id:1,name:'TRAINEE',role:'Stylist',initials:'TR',monthlyTarget:40000},
+    {id:2,name:'Ravi Kumar',role:'Senior Stylist',initials:'RK',monthlyTarget:60000},
+    {id:3,name:'Senthil',role:'Barber',initials:'SE',monthlyTarget:35000},
+  ],
+  billCounter: 50718,
+  importLog: []
+};
+async function loadBillsFromBackend() {
+  try {
+    const res = await fetch('http://localhost:3002/api/bills');
+    const bills = await res.json();
+
+    DB.bills = bills.map(b => ({
+      ...b,
+      items: (b.items || []).map(i => ({
+        name: i.item_name,   // 🔥 FIX HERE
+        type: i.type,
+        staff: i.staff,
+        price: i.price,
+        discount: i.discount,
+        net: i.net
+      }))
+    }));
+
+    renderBillsTable();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load bills");
+  }
+}
+function loadDB(){const s=localStorage.getItem('gs_salon_v3');if(s){try{DB=JSON.parse(s)}catch(e){}}}
+function saveDB(){localStorage.setItem('gs_salon_v3',JSON.stringify(DB))}
+//loadDB();
+
+// Seed demo bills matching the screenshots
+/*if(!DB.bills.length){
+  const t=new Date().toISOString().slice(0,10);
+  const demoBills=[
+    {clientName:'rajadurai',items:[{name:'HAIR CUT/SHAVE',type:'service',staff:'TRAINEE',price:148,discount:0,net:148}],payment:'Cash'},
+    {clientName:'rv selvan',items:[{name:'HAIR CUT',type:'service',staff:'TRAINEE',price:99,discount:0,net:99}],payment:'Cash'},
+    {clientName:'a rajesh',items:[{name:'SHAVE',type:'service',staff:'Ravi Kumar',price:49,discount:0,net:49}],payment:'Cash'},
+    {clientName:'sahkul',items:[{name:'CHANGE OF STYLE',type:'service',staff:'Ravi Kumar',price:199,discount:0,net:199}],payment:'Ewallet'},
+    {clientName:'KUNAL',items:[{name:'KIDS CUT',type:'service',staff:'TRAINEE',price:99,discount:0,net:99}],payment:'Cash'},
+    {clientName:'VIJAY',items:[{name:'HAIRCUT & SHAVE',type:'service',staff:'Senthil',price:149,discount:0,net:149}],payment:'Ewallet'},
+    {clientName:'selvathy',items:[{name:'HAIRCUT & TRIM',type:'service',staff:'Senthil',price:169,discount:0,net:169}],payment:'Ewallet'},
+    {clientName:'YOGASH',items:[{name:'COMBO @ 799/HAIR CUT',type:'service',staff:'Ravi Kumar',price:898,discount:0,net:898}],payment:'Ewallet'},
+    {clientName:'ALTEZAM',items:[{name:'BEARD SHAPE UP',type:'service',staff:'TRAINEE',price:70,discount:0,net:70}],payment:'Cash'},
+    {clientName:'Walkin-Customer',items:[{name:'HAIR CUT',type:'service',staff:'TRAINEE',price:99,discount:0,net:99}],payment:'Cash'},
+    {clientName:'durou',items:[{name:'HAIR CUT',type:'service',staff:'Senthil',price:99,discount:0,net:99}],payment:'Ewallet'},
+    {clientName:'UDAI',items:[{name:'HAIR LOSS HAIR SPA',type:'service',staff:'Ravi Kumar',price:749,discount:0,net:749}],payment:'Ewallet'},
+    {clientName:'KULA',items:[{name:'HALF HAND BLEACH',type:'service',staff:'TRAINEE',price:149,discount:0,net:149}],payment:'Cash'},
+    {clientName:'Walkin-Customer',items:[{name:'HAIR CUT',type:'service',staff:'Senthil',price:99,discount:0,net:99}],payment:'Cash'},
+  ];
+  demoBills.forEach((b,i)=>{
+    const sub=b.items.reduce((s,it)=>s+it.price,0);
+    const disc=b.items.reduce((s,it)=>s+(it.price-it.net),0);
+    const gst=0,total=sub-disc+gst;
+    DB.bills.push({id:DB.billCounter++,date:t,clientId:null,clientName:b.clientName,phone:'',items:b.items,subtotal:sub,discountAmt:disc,gstRate:0,gstAmt:gst,total,payment:b.payment,status:'Live',notes:''});
+  });
+  saveDB();
+}*/
+
+// ── Seed demo clients ──
+if(!DB.clients.length){
+  DB.clients=[
+    {id:'C001',name:'Priya Sharma',phone:'9876543210',email:'priya.s@gmail.com',address:'T Nagar',dob:'1990-05-15',addedOn:'2024-01-10',visits:8,totalSpent:12400,lastVisit:'2024-12-20'},
+    {id:'C002',name:'Meenakshi Iyer',phone:'9745678901',email:'meena.i@yahoo.com',address:'Mylapore',dob:'1995-03-08',addedOn:'2024-03-12',visits:12,totalSpent:24600,lastVisit:'2025-01-02'},
+    {id:'C003',name:'Kavitha Rajan',phone:'9512378456',email:'kavitha.r@hotmail.com',address:'Velachery',dob:'1992-07-19',addedOn:'2024-05-08',visits:6,totalSpent:9800,lastVisit:'2024-12-28'},
+  ];
+  saveDB();
+}
+
+// ════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════
+const today=()=>new Date().toISOString().slice(0,10);
+const yesterday=()=>{const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().slice(0,10)};
+const thisMonth=()=>new Date().toISOString().slice(0,7);
+const fmt=n=>'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:0});
+const fmt2=n=>'₹'+Number(n).toFixed(2);
+const fmtD=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'—';
+const fmtDraw=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'/'):'—';
+const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+
+function toast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(()=>t.className='toast',3000)}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+
+// ════════════════════════════════════════════════
+// BILLS TABLE
+// ════════════════════════════════════════════════
+let activeSummary='none';
+let sortKey='id', sortDir=-1;
+let filteredBills=[];
+
+function getFilteredBills(){
+  const range=document.querySelector('input[name="daterange"]:checked')?.value||'today';
+  let bills=DB.bills.filter(b=>b.status!=='Cancelled');
+  if(range==='cancelled') bills=DB.bills.filter(b=>b.status==='Cancelled');
+  else if(range==='today') bills=bills.filter(b=>b.date===today());
+  else if(range==='yesterday') bills=bills.filter(b=>b.date===yesterday());
+  else if(range==='range'){
+    const from=document.getElementById('from-date').value, to=document.getElementById('to-date').value;
+    if(from&&to) bills=bills.filter(b=>b.date>=from&&b.date<=to);
+  } else if(range==='single'){
+    const sd=document.getElementById('single-date').value;
+    if(sd) bills=bills.filter(b=>b.date===sd);
+  }
+  // search
+  const q=(document.getElementById('global-search')?.value||'').toLowerCase().trim();
+  if(q) bills=bills.filter(b=>b.clientName.toLowerCase().includes(q)||String(b.id).includes(q)||b.items.map(i=>i.name).join(',').toLowerCase().includes(q));
+  // sort
+  bills=bills.sort((a,b)=>{
+    let va=a[sortKey]||'', vb=b[sortKey]||'';
+    if(sortKey==='id'||sortKey==='total'){va=Number(va);vb=Number(vb)}
+    if(sortKey==='service'){va=a.items.map(i=>i.name).join(',');vb=b.items.map(i=>i.name).join(',')}
+    return va<vb?sortDir:va>vb?-sortDir:0;
+  });
+  return bills;
+}
+
+function renderBillsTable(){
+  filteredBills=getFilteredBills();
+  const tbody=document.getElementById('bills-tbody');
+  tbody.innerHTML=filteredBills.map((b,idx)=>`
+    <tr class="${selectedBillIdx===idx?'selected':''}" onclick="selectBill(${idx})" ondblclick="viewBill(${idx})">
+      <td class="col-billid">${b.id}</td>
+      <td class="col-status"><span class="status-${b.status==='Live'?'live':'cancel'}">${b.status||'Live'}</span></td>
+      <td class="col-client">${b.clientName}</td>
+      <td class="col-date">${fmtDraw(b.date)}</td>
+      <td class="col-svc">${b.items && b.items.length 
+  ? b.items.map(i => i.name || i.item_name).join(', ')  : '-'}</td> 
+      <td class="col-total total-cell">${b.total.toFixed(0)}</td>
+    </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">No bills</td></tr>';
+  updateTableFooter();
+  updateSummaryBar();
+  updateStatsPanel();
+}
+
+let selectedBillIdx=-1;
+function selectBill(idx){selectedBillIdx=idx;renderBillsTable()}
+function viewBill(idx){
+  const b=filteredBills[idx];if(!b)return;
+  document.getElementById('bill-detail-body').innerHTML=`
+    <div class="receipt">
+      <div class="receipt-logo">✦ Cheap and Best</div>
+      <div class="receipt-addr">123 Beauty Lane, Chennai · +91 98765 43210<br>GSTIN: 33AAAAA0000A1Z5</div>
+      <hr class="receipt-divider">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:8px">
+        <span>Bill #: <strong style="color:#111">${b.id}</strong></span><span>${fmtDraw(b.date)}</span>
+      </div>
+      <div style="margin-bottom:10px"><strong>${b.clientName}</strong>${b.phone?`<br><span style="font-size:11px;color:#888">${b.phone}</span>`:''}</div>
+      <hr class="receipt-divider">
+      ${b.items.map(i=>`<div class="receipt-row"><span>${i.name}${i.discount?` (-${i.discount}%)`:''}</span><span>₹${i.net.toFixed(0)}</span></div>`).join('')}
+      <hr class="receipt-divider">
+      <div class="receipt-row"><span>Subtotal</span><span>₹${b.subtotal.toFixed(2)}</span></div>
+      ${b.discountAmt>0?`<div class="receipt-row" style="color:#2E7D52"><span>Discount</span><span>-₹${b.discountAmt.toFixed(2)}</span></div>`:''}
+      ${b.gstRate>0?`<div class="receipt-row"><span>GST (${b.gstRate}%)</span><span>₹${b.gstAmt.toFixed(2)}</span></div>`:''}
+      <hr class="receipt-divider">
+      <div class="receipt-row receipt-total"><span>Total</span><span>₹${b.total.toFixed(2)}</span></div>
+      <div style="font-size:11px;color:#888;margin-top:6px">Payment: ${b.payment}${b.notes?' · '+b.notes:''}</div>
+      <hr class="receipt-divider">
+      <div style="text-align:center;font-size:10px;color:#999">Thank you for visiting Glamour Studio ✦</div>
+    </div>`;
+  openModal('modal-bill-detail');
+}
+
+function updateTableFooter(){
+  const totals=filteredBills.map(b=>b.total);
+  const count=totals.length;
+  const avg=count>0?(totals.reduce((s,v)=>s+v,0)/count):0;
+  document.getElementById('tf-count').textContent='Count: '+count;
+  document.getElementById('tf-avg').textContent='AVG = '+avg.toFixed(2);
+  document.getElementById('top-count-bar').textContent=count+' bills shown';
+}
+
+function updateSummaryBar(){
+  if(activeSummary==='none'){document.getElementById('summary-bar').innerHTML='<span style="color:var(--text3);font-size:11px">Right-click on Total column header for summary options</span>';return}
+  const totals=filteredBills.map(b=>b.total);
+  if(!totals.length){document.getElementById('summary-bar').innerHTML='';return}
+  const sum=totals.reduce((s,v)=>s+v,0);
+  const min=Math.min(...totals),max=Math.max(...totals),count=totals.length,avg=sum/count;
+  const vals={sum:{label:'Sum',val:'₹'+sum.toFixed(2)},min:{label:'Min',val:'₹'+min.toFixed(2)},max:{label:'Max',val:'₹'+max.toFixed(2)},count:{label:'Count',val:count},avg:{label:'Average',val:'₹'+avg.toFixed(2)}};
+  const v=vals[activeSummary];
+  document.getElementById('summary-bar').innerHTML=`<div class="sum-item"><span class="sum-key">${v.label}:</span><span class="sum-val">${v.val}</span></div><div class="sum-item"><span class="sum-key">of ${count} bills</span></div>`;
+}
+
+function sortBills(key){
+  if(sortKey===key)sortDir*=-1; else{sortKey=key;sortDir=-1}
+  renderBillsTable();
+}
+
+// ── Stats panel ──
+function updateStatsPanel(){
+  const bills=filteredBills;
+  const gross=bills.reduce((s,b)=>s+b.total,0);
+  const cash=bills.filter(b=>b.payment==='Cash').reduce((s,b)=>s+b.total,0);
+  const card=bills.filter(b=>b.payment==='Card').reduce((s,b)=>s+b.total,0);
+  const upi=bills.filter(b=>b.payment==='UPI').reduce((s,b)=>s+b.total,0);
+  const ew=bills.filter(b=>b.payment==='Ewallet').reduce((s,b)=>s+b.total,0);
+  const nb=bills.filter(b=>b.payment==='NetBanking').reduce((s,b)=>s+b.total,0);
+  const svcBills=bills.filter(b=>b.items.some(i=>i.type==='service'));
+  const prdBills=bills.filter(b=>b.items.some(i=>i.type==='product'));
+  const svcNet=svcBills.reduce((s,b)=>s+b.items.filter(i=>i.type==='service').reduce((x,i)=>x+i.net,0),0);
+  const prdNet=prdBills.reduce((s,b)=>s+b.items.filter(i=>i.type==='product').reduce((x,i)=>x+i.net,0),0);
+  document.getElementById('gross-sale').textContent=gross.toFixed(2);
+  document.getElementById('net-sale').textContent=gross.toFixed(2);
+  document.getElementById('t-cash').textContent=cash.toFixed(0);
+  document.getElementById('t-card').textContent=card.toFixed(0);
+  document.getElementById('t-upi').textContent=upi.toFixed(0);
+  document.getElementById('t-ewallet').textContent=ew.toFixed(0);
+  document.getElementById('t-nb').textContent=nb.toFixed(0);
+  document.getElementById('s-netsale').textContent=svcNet.toFixed(0);
+  document.getElementById('s-grosssale').textContent=svcNet.toFixed(0);
+  document.getElementById('p-netsale').textContent=prdNet.toFixed(0);
+  document.getElementById('p-grosssale').textContent=prdNet.toFixed(0);
+}
+
+// ── Context Menu ──
+function setSummary(type){
+  activeSummary=type;
+  document.querySelectorAll('.ctx-item').forEach(el=>el.classList.remove('active'));
+  if(type!=='none'){const el=document.getElementById('ctx-'+type);if(el)el.classList.add('active')}
+  document.getElementById('ctx-menu').style.display='none';
+  updateSummaryBar();
+}
+
+document.getElementById('bills-table').addEventListener('contextmenu',e=>{
+  if(e.target.closest('th.col-total')||e.target.closest('td.total-cell')){
+    e.preventDefault();
+    const menu=document.getElementById('ctx-menu');
+    menu.style.left=Math.min(e.clientX,window.innerWidth-170)+'px';
+    menu.style.top=Math.min(e.clientY,window.innerHeight-220)+'px';
+    menu.style.display='block';
+  }
+});
+document.addEventListener('click',()=>document.getElementById('ctx-menu').style.display='none');
+document.addEventListener('contextmenu',e=>{if(!e.target.closest('#bills-table'))document.getElementById('ctx-menu').style.display='none'});
+
+// ── Date Range ──
+function applyDateRange(){
+  const range=document.querySelector('input[name="daterange"]:checked')?.value||'today';
+  document.getElementById('date-inputs').style.display=range==='range'?'flex':'none';
+  document.getElementById('single-date-input').style.display=range==='single'?'flex':'none';
+  renderBillsTable();
+}
+
+// ── Global search ──
+function globalSearch(){renderBillsTable()}
+
+// ════════════════════════════════════════════════
+// NEW BILL
+// ════════════════════════════════════════════════
+let nbSelClient=null;let nbIC=0;
+
+function nbSearchClient(){
+  const q=document.getElementById('nb-client-search').value.toLowerCase().trim();
+  const drop=document.getElementById('nb-client-drop');
+  if(!q){drop.style.display='none';return}
+  const m=DB.clients.filter(c=>c.name.toLowerCase().includes(q)||c.phone.includes(q));
+  if(!m.length){drop.style.display='none';return}
+  drop.style.display='block';
+  drop.innerHTML=m.slice(0,5).map(c=>`<div class="csearch-item" onclick="nbSelectClient('${c.id}')">
+    <div class="cs-name">${c.name}</div>
+    <div class="cs-sub">${c.phone}${c.email?' · '+c.email:''} · ${c.visits||0} visits</div>
+  </div>`).join('');
+}
+
+function nbSelectClient(id){
+  nbSelClient=DB.clients.find(c=>c.id===id);
+  document.getElementById('nb-client-drop').style.display='none';
+  document.getElementById('nb-selected-client').style.display='block';
+  document.getElementById('nb-sc-name').textContent=nbSelClient.name;
+  document.getElementById('nb-sc-info').textContent=nbSelClient.phone+(nbSelClient.email?' · '+nbSelClient.email:'');
+  document.getElementById('nb-sc-hist').textContent=`${nbSelClient.visits||0} visits · ${fmt(nbSelClient.totalSpent||0)} spent · Last: ${fmtD(nbSelClient.lastVisit)}`;
+  document.getElementById('nb-new-client-form').style.display='none';
+}
+
+function clearNBClient(){nbSelClient=null;document.getElementById('nb-selected-client').style.display='none';document.getElementById('nb-client-search').value=''}
+
+function toggleNBNewClient(){
+  const f=document.getElementById('nb-new-client-form');
+  f.style.display=f.style.display==='none'?'block':'none';
+  nbSelClient=null;document.getElementById('nb-selected-client').style.display='none';
+}
+
+function addNBItem(type='service'){
+  const id='nbi'+(++nbIC);
+  const sOpts=DB.staff.map(s=>`<option>${s.name}</option>`).join('');
+  const iOpts=type==='service'
+    ?'<option value="">-- Service --</option>'+DB.services.map(s=>`<option value="${s.name}" data-p="${s.price}">${s.name} (₹${s.price})</option>`).join('')
+    :'<option value="">-- Product --</option>'+DB.products.map(p=>`<option value="${p.name}" data-p="${p.price}">${p.name} (₹${p.price})</option>`).join('');
+  const badge=type==='service'?'<span class="badge badge-rose" style="font-size:9px">SVC</span>':'<span class="badge badge-gold" style="font-size:9px">PRD</span>';
+  const row=document.createElement('div');row.className='bill-item-row';row.id=id;row.dataset.type=type;
+  row.innerHTML=`<div style="display:flex;align-items:center;gap:4px">${badge}<select style="flex:1;font-size:12px" onchange="nbOnChange(this)">${iOpts}</select></div>
+    <select style="font-size:12px">${sOpts}</select>
+    <input type="number" placeholder="0" class="nbi-p" oninput="nbRecalc()" style="font-size:12px">
+    <input type="number" placeholder="0" value="0" class="nbi-d" oninput="nbRecalc()" style="font-size:12px">
+    <button onclick="document.getElementById('${id}').remove();nbRecalc()" style="background:none;border:none;cursor:pointer;color:var(--rose);font-size:18px;line-height:1">×</button>`;
+  document.getElementById('nb-items').appendChild(row);
+}
+
+function nbOnChange(sel){const o=sel.options[sel.selectedIndex];const pi=sel.closest('.bill-item-row').querySelector('.nbi-p');if(o.dataset.p)pi.value=o.dataset.p;nbRecalc()}
+
+function nbRecalc(){
+  const rows=document.querySelectorAll('.bill-item-row');let sub=0,disc=0;
+  rows.forEach(r=>{const p=parseFloat(r.querySelector('.nbi-p')?.value)||0,d=parseFloat(r.querySelector('.nbi-d')?.value)||0;const net=p*(1-d/100);sub+=p;disc+=(p-net)});
+  const gr=parseFloat(document.getElementById('nb-gst-rate').value)||0;
+  const tax=sub-disc,gst=tax*gr/100,total=tax+gst;
+  document.getElementById('nb-sub').textContent=fmt2(sub);
+  document.getElementById('nb-disc').textContent='- '+fmt2(disc);
+  document.getElementById('nb-gst').textContent=fmt2(gst);
+  document.getElementById('nb-gst-lbl').textContent='GST ('+gr+'%)';
+  document.getElementById('nb-total').textContent=fmt2(total);
+}
+async function saveNewBill() {
+  const clientName =
+    nbSelClient?.name || document.getElementById('nb-nc-name').value;
+
+  const payment = document.getElementById('nb-pay').value;
+
+  const items = [];
+
+  document.querySelectorAll('#nb-items .bill-item-row').forEach(row => {
+    const name = row.querySelector('select').value;
+    const staff = row.querySelectorAll('select')[1].value;
+
+    const price = parseFloat(row.querySelector('.nbi-p').value || 0);
+    const discount = parseFloat(row.querySelector('.nbi-d').value || 0);
+    const net = price - (price * discount / 100);
+
+    items.push({
+      name,
+      type: row.dataset.type || 'service',
+      staff,
+      price,
+      discount,
+      net
+    });
+  });
+
+  const total = items.reduce((sum, i) => sum + i.net, 0);
+
+  const bill = {
+    clientName,
+    date: new Date().toISOString().slice(0, 10),
+    total,
+    payment,
+    status: 'Live',
+    items
+  };
+
+  const res = await fetch('http://localhost:3002/api/bills', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(bill)
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    alert("Bill saved with items");
+    loadBillsFromBackend();
+  }
+}
+
+
+// ════════════════════════════════════════════════
+// CLIENTS PAGE
+// ════════════════════════════════════════════════
+function renderClientsPage(){
+  filterClientsPage();
+}
+function filterClientsPage(){
+  const q=(document.getElementById('client-search-q')?.value||'').toLowerCase();
+  const f=DB.clients.filter(c=>!q||(c.name.toLowerCase().includes(q)||c.phone.includes(q)));
+  const tbody=document.getElementById('clients-page-tbody');
+  tbody.innerHTML=f.map(c=>`<tr>
+    <td><strong>${c.name}</strong></td><td>${c.phone}</td><td>${c.email||'—'}</td>
+    <td>${c.visits||0}</td><td>${fmt(c.totalSpent||0)}</td><td>${fmtD(c.lastVisit)}</td>
+    <td>${favSvc(c.id)}</td>
+    <td><button class="btn btn-sm btn-outline" onclick="quickBillClient('${c.id}')">Bill</button></td>
+  </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:18px">No clients</td></tr>';
+}
+function favSvc(cid){const items=DB.bills.filter(b=>b.clientId===cid).flatMap(b=>b.items.filter(i=>i.type==='service'));if(!items.length)return'—';const f={};items.forEach(i=>f[i.name]=(f[i.name]||0)+1);return Object.entries(f).sort((a,b)=>b[1]-a[1])[0][0]}
+function saveClient(){
+  const n=document.getElementById('ac-name').value.trim(),p=document.getElementById('ac-phone').value.trim();
+  if(!n||!p){toast('Name and phone required');return}
+  upsertClient({name:n,phone:p,email:document.getElementById('ac-email').value.trim(),address:document.getElementById('ac-addr').value.trim(),dob:document.getElementById('ac-dob').value});
+  closeModal('modal-add-client');renderClientsPage();toast('Client saved');
+}
+function upsertClient(d){
+  const ex=DB.clients.find(c=>c.phone===d.phone);
+  if(ex){Object.assign(ex,d);saveDB();return ex}
+  const c={id:'C'+String(DB.clients.length+1).padStart(3,'0'),visits:0,totalSpent:0,lastVisit:'',addedOn:today(),...d};
+  DB.clients.push(c);saveDB();return c;
+}
+function quickBillClient(id){nbSelClient=null;openModal('modal-new-bill');setTimeout(()=>nbSelectClient(id),100)}
+
+// ════════════════════════════════════════════════
+// STAFF PAGE
+// ════════════════════════════════════════════════
+function renderStaffPage(){
+  const container=document.getElementById('staff-cards');
+  const m=thisMonth();
+  container.innerHTML=DB.staff.map(s=>{
+    const items=DB.bills.filter(b=>b.date.startsWith(m)).flatMap(b=>b.items.filter(i=>i.staff===s.name));
+    const total=items.reduce((x,i)=>x+i.net,0),count=items.length;
+    const tgt=s.monthlyTarget||0,pct=tgt>0?Math.min(100,(total/tgt)*100):0;
+    const todayItems=DB.bills.filter(b=>b.date===today()).flatMap(b=>b.items.filter(i=>i.staff===s.name));
+    const todayTotal=todayItems.reduce((x,i)=>x+i.net,0);
+    return`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--rose-glow);border:1px solid var(--rose);display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--rose);font-size:15px">${s.initials}</div>
+        <div><div style="font-size:14px;font-weight:500">${s.name}</div><div style="font-size:11px;color:var(--text3)">${s.role}</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        ${[['Today',fmt(todayTotal)],['Month',fmt(total)],['Services',count]].map(([l,v])=>`<div style="background:var(--bg4);border-radius:6px;padding:8px;text-align:center"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">${l}</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:var(--text)">${v}</div></div>`).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--text3);display:flex;justify-content:space-between;margin-bottom:4px"><span>Monthly Target</span><span style="color:var(--amber)">${fmt(total)} / ${fmt(tgt)}</span></div>
+      <div style="background:var(--bg4);border-radius:20px;height:6px;overflow:hidden"><div style="height:100%;border-radius:20px;background:${pct>=100?'var(--green)':'var(--rose)'};width:${pct}%"></div></div>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">${pct.toFixed(1)}%${pct>=100?' ✓ Hit!':''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+// SERVICES
+// ════════════════════════════════════════════════
+function renderServicesPage(){
+  document.getElementById('svcs-page-tbody').innerHTML=DB.services.map(s=>{
+    const used=DB.bills.flatMap(b=>b.items).filter(i=>i.name===s.name).length;
+    return`<tr><td><strong>${s.name}</strong></td><td><span class="badge badge-rose">${s.category}</span></td><td style="font-family:'DM Mono',monospace">₹${s.price}</td><td>${s.duration} min</td><td>${used}</td>
+    <td><button class="btn btn-sm" style="background:var(--rose-glow);color:var(--rose);border:1px solid var(--rose);border-radius:4px;font-size:11px;cursor:pointer" onclick="DB.services=DB.services.filter(x=>x.id!==${s.id});saveDB();renderServicesPage()">×</button></td></tr>`;
+  }).join('');
+}
+function saveSvc(){
+  const n=document.getElementById('sv-name').value.trim(),p=parseFloat(document.getElementById('sv-price').value)||0;
+  if(!n||!p){toast('Name and price required');return}
+  DB.services.push({id:Date.now(),name:n,category:document.getElementById('sv-cat').value,price:p,duration:parseInt(document.getElementById('sv-dur').value)||30});
+  saveDB();closeModal('modal-add-svc');renderServicesPage();document.getElementById('sv-name').value='';document.getElementById('sv-price').value='';toast('Service added');
+}
+
+// ════════════════════════════════════════════════
+// PRODUCTS
+// ════════════════════════════════════════════════
+function renderProductsPage(){
+  document.getElementById('prds-page-tbody').innerHTML=DB.products.map(p=>`<tr>
+    <td><strong>${p.name}</strong></td><td>${p.brand||'—'}</td><td><span class="badge badge-gold">${p.category}</span></td>
+    <td style="font-family:'DM Mono',monospace">₹${p.price}</td>
+    <td><span class="badge badge-${(p.stock||0)<=3?'rose':'badge-green'}" style="${(p.stock||0)<=3?'':'background:var(--green-bg);color:var(--green)'}">${p.stock||0}</span></td>
+    <td>${p.sold||0}</td>
+    <td><button class="btn btn-sm" style="background:var(--rose-glow);color:var(--rose);border:1px solid var(--rose);border-radius:4px;font-size:11px;cursor:pointer" onclick="DB.products=DB.products.filter(x=>x.id!==${p.id});saveDB();renderProductsPage()">×</button></td>
+  </tr>`).join('');
+}
+function savePrd(){
+  const n=document.getElementById('pv-name').value.trim(),p=parseFloat(document.getElementById('pv-price').value)||0;
+  if(!n||!p){toast('Name and price required');return}
+  DB.products.push({id:Date.now(),name:n,brand:document.getElementById('pv-brand').value.trim(),category:'Other',price:p,stock:parseInt(document.getElementById('pv-stock').value)||0,sold:0});
+  saveDB();closeModal('modal-add-prd');renderProductsPage();toast('Product added');
+}
+
+// ════════════════════════════════════════════════
+// DAY CLOSE
+// ════════════════════════════════════════════════
+function renderDayClose(){
+  document.getElementById('dc-date').textContent=fmtD(today());
+  const tb=DB.bills.filter(b=>b.date===today()&&b.status==='Live');
+  const gross=tb.reduce((s,b)=>s+b.total,0);
+  const cash=tb.filter(b=>b.payment==='Cash').reduce((s,b)=>s+b.total,0);
+  const upi=tb.filter(b=>b.payment==='UPI').reduce((s,b)=>s+b.total,0);
+  const card=tb.filter(b=>b.payment==='Card').reduce((s,b)=>s+b.total,0);
+  const ew=tb.filter(b=>b.payment==='Ewallet').reduce((s,b)=>s+b.total,0);
+  document.getElementById('dc-body').innerHTML=`
+    <div class="dayclose-grid">
+      <div class="dc-card"><div class="dc-label">Total Bills</div><div class="dc-val">${tb.length}</div></div>
+      <div class="dc-card"><div class="dc-label">Gross Sale</div><div class="dc-val" style="color:var(--green)">${fmt2(gross)}</div></div>
+      <div class="dc-card"><div class="dc-label">Cash</div><div class="dc-val">${fmt2(cash)}</div></div>
+      <div class="dc-card"><div class="dc-label">UPI</div><div class="dc-val">${fmt2(upi)}</div></div>
+      <div class="dc-card"><div class="dc-label">Card</div><div class="dc-val">${fmt2(card)}</div></div>
+      <div class="dc-card"><div class="dc-label">Ewallet</div><div class="dc-val">${fmt2(ew)}</div></div>
+    </div>
+    <div style="margin-top:14px;overflow-x:auto">
+      <table class="bills-table" style="width:100%">
+        <thead><tr><th>#</th><th>Client</th><th>Service</th><th>Payment</th><th>Total</th></tr></thead>
+        <tbody>${tb.map(b=>`<tr><td>${b.id}</td><td>${b.clientName}</td><td>${b.items.map(i=>i.name).join(', ')}</td><td>${b.payment}</td><td style="font-family:'DM Mono',monospace;color:var(--green)">${b.total.toFixed(2)}</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════
+// PAGE NAVIGATION
+// ════════════════════════════════════════════════
+function showPage(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.tb-btn').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.sb-tab').forEach(el=>el.classList.remove('active'));
+  if(p==='bills'){renderBillsTable()}
+  if(p==='clients'){renderClientsPage()}
+  if(p==='staff'){renderStaffPage()}
+  if(p==='services'){renderServicesPage()}
+  if(p==='products'){renderProductsPage()}
+}
+function showMenu(p){showPage(p)}
+
+// ════════════════════════════════════════════════
+// RESIZER (drag to resize top/bottom)
+// ════════════════════════════════════════════════
+(function(){
+  const resizer=document.getElementById('resizer');
+  const top=document.getElementById('bills-top');
+  const bottom=document.getElementById('bills-bottom');
+  let dragging=false,startY=0,startTopH=0;
+  resizer.addEventListener('mousedown',e=>{
+    dragging=true;startY=e.clientY;startTopH=top.offsetHeight;
+    document.body.style.cursor='row-resize';document.body.style.userSelect='none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const delta=e.clientY-startY;
+    const newH=Math.max(120,Math.min(startTopH+delta,window.innerHeight-250));
+    top.style.height=newH+'px';top.style.flex='none';
+    bottom.style.flex='1';
+  });
+  document.addEventListener('mouseup',()=>{dragging=false;document.body.style.cursor='';document.body.style.userSelect=''});
+})();
+
+// ════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════
+document.getElementById('modal-dayclose').addEventListener('click',e=>{if(e.target===document.getElementById('modal-dayclose'))return});
+document.querySelector('[onclick="openModal(\'modal-dayclose\')"]').addEventListener('click',renderDayClose,true);
+// patch all dayclose openers
+document.querySelectorAll('[onclick]').forEach(el=>{if(el.getAttribute('onclick').includes('modal-dayclose'))el.addEventListener('click',renderDayClose,true)});
+
+// Default dates
+document.getElementById('from-date').value=today();
+document.getElementById('to-date').value=today();
+document.getElementById('single-date').value=today();
+
+// Initial render
+applyDateRange();
+window.onload = () => {
+  loadBillsFromBackend();
+};
+</script>
+</body>
+</html>
