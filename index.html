@@ -195,6 +195,17 @@ select option{background:var(--bg3)}
 .csearch-item .cs-sub{font-size:11px;color:var(--text3)}
 .field-wrap{position:relative}
 
+.match-card{display:none;background:var(--blue-bg);border:1px solid var(--blue);border-radius:var(--r);padding:8px 10px;margin-top:8px;font-size:12px}
+.match-card.show{display:block}
+.staff-filter-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:14px}
+.staff-filter-bar .fg{min-width:140px}
+.staff-filter-bar .btn{height:34px}
+.satisfaction-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.satisfaction-option{background:var(--bg4);border:1px solid var(--border2);border-radius:var(--rl);padding:14px 12px;cursor:pointer;transition:all .15s;text-align:center}
+.satisfaction-option:hover{border-color:var(--rose);transform:translateY(-1px)}
+.satisfaction-emoji{display:block;font-size:28px;margin-bottom:8px}
+.satisfaction-label{font-size:12px;font-weight:500;color:var(--text)}
+
 /* ── Bill receipt preview ── */
 .receipt{background:#fff;color:#111;border-radius:var(--r);padding:20px;max-width:360px;margin:0 auto;font-family:'DM Mono',monospace;font-size:12px}
 .receipt-logo{text-align:center;font-family:'Sora',sans-serif;font-size:20px;font-weight:600;color:#B5616A;margin-bottom:2px}
@@ -414,6 +425,32 @@ select option{background:var(--bg3)}
       <div id="page-staff" class="page">
         <div class="page-staff" style="flex:1;overflow-y:auto">
           <h2 style="font-size:15px;font-weight:500;margin-bottom:12px">Staff Sales</h2>
+          <div class="staff-filter-bar">
+            <div class="fg">
+              <label>Range</label>
+              <select id="staff-date-range" onchange="applyStaffDateRange()">
+                <option value="today">Today's Bills</option>
+                <option value="yesterday">Yesterday's Bills</option>
+                <option value="month" selected>This Month</option>
+                <option value="range">Range</option>
+                <option value="single">Single</option>
+                <option value="all">All Dates</option>
+              </select>
+            </div>
+            <div class="fg" id="staff-from-wrap" style="display:none">
+              <label>From</label>
+              <input id="staff-from-date" type="date">
+            </div>
+            <div class="fg" id="staff-to-wrap" style="display:none">
+              <label>To</label>
+              <input id="staff-to-date" type="date">
+            </div>
+            <div class="fg" id="staff-single-wrap" style="display:none">
+              <label>Date</label>
+              <input id="staff-single-date" type="date">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="renderStaffPage()">View</button>
+          </div>
           <div id="staff-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
         </div>
       </div>
@@ -490,7 +527,11 @@ select option{background:var(--bg3)}
       <div id="nb-new-client-form" style="display:none;background:var(--bg4);border-radius:var(--r);padding:12px;margin-bottom:12px">
         <div class="fg2">
           <div class="fg"><label>Name *</label><input id="nb-nc-name" placeholder="Client name"></div>
-          <div class="fg"><label>Phone *</label><input id="nb-nc-phone" placeholder="+91…"></div>
+          <div class="fg">
+            <label>Phone *</label>
+            <input id="nb-nc-phone" placeholder="+91…" oninput="nbCheckPhoneMatch()">
+            <div class="match-card" id="nb-phone-match"></div>
+          </div>
           <div class="fg"><label>Email</label><input id="nb-nc-email" placeholder="email@example.com"></div>
           <div class="fg"><label>Address</label><input id="nb-nc-addr" placeholder="Address"></div>
         </div>
@@ -613,15 +654,51 @@ select option{background:var(--bg3)}
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-satisfaction">
+  <div class="modal" style="width:560px">
+    <div class="modal-hd"><h3>Customer Satisfaction</h3><button class="close-btn" onclick="closeModal('modal-satisfaction')">Ã—</button></div>
+    <div class="modal-bd">
+      <p style="color:var(--text2);margin-bottom:14px">How satisfied was the customer with this visit?</p>
+      <div class="satisfaction-grid">
+        <button class="satisfaction-option" onclick="saveSatisfaction('Very Satisfied')">
+          <span class="satisfaction-emoji">😍</span>
+          <span class="satisfaction-label">Very Satisfied</span>
+        </button>
+        <button class="satisfaction-option" onclick="saveSatisfaction('Satisfied')">
+          <span class="satisfaction-emoji">🙂</span>
+          <span class="satisfaction-label">Satisfied</span>
+        </button>
+        <button class="satisfaction-option" onclick="saveSatisfaction('Not Satisfied')">
+          <span class="satisfaction-emoji">😕</span>
+          <span class="satisfaction-label">Not Satisfied</span>
+        </button>
+        <button class="satisfaction-option" onclick="saveSatisfaction('Very Much Dissatisfied')">
+          <span class="satisfaction-emoji">😞</span>
+          <span class="satisfaction-label">Very Much Dissatisfied</span>
+        </button>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-satisfaction')">Skip</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 // ════════════════════════════════════════════════
 // DATA LAYER — mirrors what a real backend returns
 // ════════════════════════════════════════════════
-const BASE_URL = "https://salon-backend-1-sok8.onrender.com";
+const BASE_URL = window.SALON_API_URL || "https://salon-backend-1-sok8.onrender.com";
+const SEEDED_CLIENTS = [
+  {id:'C001',name:'Priya Sharma',phone:'9876543210',email:'priya.s@gmail.com',address:'T Nagar',dob:'1990-05-15',addedOn:'2024-01-10',visits:8,totalSpent:12400,lastVisit:'2024-12-20'},
+  {id:'C002',name:'Meenakshi Iyer',phone:'9745678901',email:'meena.i@yahoo.com',address:'Mylapore',dob:'1995-03-08',addedOn:'2024-03-12',visits:12,totalSpent:24600,lastVisit:'2025-01-02'},
+  {id:'C003',name:'Kavitha Rajan',phone:'9512378456',email:'kavitha.r@hotmail.com',address:'Velachery',dob:'1992-07-19',addedOn:'2024-05-08',visits:6,totalSpent:9800,lastVisit:'2024-12-28'},
+];
+let pendingSatisfactionBillId = null;
 let DB = {
-  clients: [],
+  clients: [...SEEDED_CLIENTS],
   bills: [],
   services: [
     {id:1,name:'HAIR CUT/SHAVE',category:'Hair',price:148,duration:30},
@@ -735,11 +812,112 @@ const fmt2=n=>'₹'+Number(n).toFixed(2);
 const fmtD=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'—';
 const fmtDraw=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'/'):'—';
 const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const daysSince=date=>date?Math.floor((new Date(today())-new Date(date))/86400000):null;
+const isClientInactive=client=>client.lastVisit&&daysSince(client.lastVisit)>=30;
+
+function syncClientIntoMemory(client){
+  if(!client) return;
+  const normalized={
+    id:client.id,
+    name:client.name,
+    phone:client.phone||'',
+    email:client.email||'',
+    address:client.address||'',
+    dob:(client.dob||'').slice(0,10),
+    addedOn:(client.added_on||client.addedOn||today()).slice(0,10),
+    visits:Number(client.visits||0),
+    totalSpent:Number(client.total_spent ?? client.totalSpent ?? 0),
+    lastVisit:(client.last_visit||client.lastVisit||'').slice(0,10)
+  };
+  const idx=DB.clients.findIndex(c=>c.phone===normalized.phone || String(c.id)===String(normalized.id));
+  if(idx>=0) DB.clients[idx]={...DB.clients[idx],...normalized};
+  else DB.clients.push(normalized);
+}
+
+function getBillsForDateFilter(range, from, to, singleDate){
+  let bills=[...DB.bills];
+  if(range==='today') bills=bills.filter(b=>b.date===today());
+  else if(range==='yesterday') bills=bills.filter(b=>b.date===yesterday());
+  else if(range==='month') bills=bills.filter(b=>b.date.startsWith(thisMonth()));
+  else if(range==='range' && from && to) bills=bills.filter(b=>b.date>=from&&b.date<=to);
+  else if(range==='single' && singleDate) bills=bills.filter(b=>b.date===singleDate);
+  return bills;
+}
 
 function toast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(()=>t.className='toast',3000)}
 function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+
+function normalizeClient(client){
+  return {
+    id: client.id,
+    name: client.name,
+    phone: client.phone || '',
+    email: client.email || '',
+    address: client.address || '',
+    dob: client.dob ? String(client.dob).slice(0,10) : '',
+    addedOn: (client.added_on || client.addedOn || '').slice(0,10),
+    visits: Number(client.visits || 0),
+    totalSpent: Number(client.total_spent ?? client.totalSpent ?? 0),
+    lastVisit: (client.last_visit || client.lastVisit || '').slice(0,10)
+  };
+}
+
+function normalizeBill(b){
+  const items=(b.items||[]).filter(Boolean).map(i=>({
+    name:i.service_name,
+    type:'service',
+    staff:i.staff,
+    price:Number(i.price||0),
+    discount:Number(i.discount||0),
+    net:Number(i.final_price||0)
+  }));
+  const subtotal=items.reduce((sum,item)=>sum+item.price,0);
+  const discountAmt=items.reduce((sum,item)=>sum+(item.price-item.net),0);
+  return {
+    id:b.id,
+    clientId:b.client_id||null,
+    clientName:b.clientName||b.clientname||'Walk-in Customer',
+    phone:b.client_phone||'',
+    total:Number(b.total||0),
+    subtotal,
+    discountAmt,
+    gstRate:0,
+    gstAmt:0,
+    date:(b.date||'').slice(0,10),
+    status:b.status||'Live',
+    payment:b.payment||'Cash',
+    notes:b.notes||'',
+    satisfaction:b.satisfaction||'',
+    items
+  };
+}
+
+async function loadClientsFromBackend(){
+  try{
+    const res=await fetch(`${BASE_URL}/api/clients`);
+    if(!res.ok) throw new Error('Failed to load clients');
+    const clients=await res.json();
+    if(clients.length) DB.clients=clients.map(normalizeClient);
+  }catch(err){
+    console.error('CLIENT LOAD ERROR:',err);
+  }
+}
+
+async function loadBillsFromBackend() {
+  try {
+    const res = await fetch(`${BASE_URL}/api/bills`);
+    if(!res.ok) throw new Error('Failed to load bills');
+    const bills = await res.json();
+    DB.bills = bills.map(normalizeBill);
+    renderBillsTable();
+    renderStaffPage();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load bills");
+  }
+}
 
 // ════════════════════════════════════════════════
 // BILLS TABLE
@@ -750,17 +928,12 @@ let filteredBills=[];
 
 function getFilteredBills(){
   const range=document.querySelector('input[name="daterange"]:checked')?.value||'today';
-  let bills=DB.bills.filter(b=>b.status!=='Cancelled');
-  if(range==='cancelled') bills=DB.bills.filter(b=>b.status==='Cancelled');
-  else if(range==='today') bills=bills.filter(b=>b.date===today());
-  else if(range==='yesterday') bills=bills.filter(b=>b.date===yesterday());
-  else if(range==='range'){
-    const from=document.getElementById('from-date').value, to=document.getElementById('to-date').value;
-    if(from&&to) bills=bills.filter(b=>b.date>=from&&b.date<=to);
-  } else if(range==='single'){
-    const sd=document.getElementById('single-date').value;
-    if(sd) bills=bills.filter(b=>b.date===sd);
-  }
+  const from=document.getElementById('from-date').value;
+  const to=document.getElementById('to-date').value;
+  const sd=document.getElementById('single-date').value;
+  let bills=range==='cancelled'
+    ? DB.bills.filter(b=>b.status==='Cancelled')
+    : getBillsForDateFilter(range,from,to,sd).filter(b=>b.status!=='Cancelled');
   // search
   const q=(document.getElementById('global-search')?.value||'').toLowerCase().trim();
   if(q) bills=bills.filter(b=>b.clientName.toLowerCase().includes(q)||String(b.id).includes(q)||b.items.map(i=>i.name).join(',').toLowerCase().includes(q));
@@ -968,14 +1141,6 @@ function nbSelectClient(id){
   document.getElementById('nb-new-client-form').style.display='none';
 }
 
-function clearNBClient(){nbSelClient=null;document.getElementById('nb-selected-client').style.display='none';document.getElementById('nb-client-search').value=''}
-
-function toggleNBNewClient(){
-  const f=document.getElementById('nb-new-client-form');
-  f.style.display=f.style.display==='none'?'block':'none';
-  nbSelClient=null;document.getElementById('nb-selected-client').style.display='none';
-}
-
 function addNBItem(type='service'){
   const id='nbi'+(++nbIC);
   const sOpts=DB.staff.map(s=>`<option>${s.name}</option>`).join('');
@@ -1005,60 +1170,126 @@ function nbRecalc(){
   document.getElementById('nb-gst-lbl').textContent='GST ('+gr+'%)';
   document.getElementById('nb-total').textContent=fmt2(total);
 }
+function nbCheckPhoneMatch(){
+  const phone=document.getElementById('nb-nc-phone').value.trim();
+  const matchBox=document.getElementById('nb-phone-match');
+  if(!phone){
+    matchBox.className='match-card';
+    matchBox.innerHTML='';
+    return;
+  }
+  const match=DB.clients.find(c=>c.phone===phone);
+  if(!match){
+    matchBox.className='match-card';
+    matchBox.innerHTML='';
+    return;
+  }
+  matchBox.className='match-card show';
+  matchBox.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><strong>${match.name}</strong><div style="font-size:11px;color:var(--text2)">Existing client found · Last visit ${fmtD(match.lastVisit)}</div></div><button class="btn btn-sm btn-primary" onclick="nbUseMatchedClient('${match.id}')">Use Client</button></div>`;
+}
+
+function nbUseMatchedClient(id){
+  nbSelectClient(id);
+  document.getElementById('nb-phone-match').className='match-card';
+  document.getElementById('nb-phone-match').innerHTML='';
+}
+
+function clearNBClient(){
+  nbSelClient=null;
+  document.getElementById('nb-selected-client').style.display='none';
+  document.getElementById('nb-client-search').value='';
+}
+
+function toggleNBNewClient(){
+  const f=document.getElementById('nb-new-client-form');
+  f.style.display=f.style.display==='none'?'block':'none';
+  nbSelClient=null;
+  document.getElementById('nb-selected-client').style.display='none';
+  document.getElementById('nb-phone-match').className='match-card';
+  document.getElementById('nb-phone-match').innerHTML='';
+}
+
 async function saveNewBill() {
   try {
-    const clientName =
-      nbSelClient?.name || document.getElementById('nb-nc-name').value;
-
+    const clientName = (nbSelClient?.name || document.getElementById('nb-nc-name').value).trim();
+    const clientPhone = (nbSelClient?.phone || document.getElementById('nb-nc-phone').value).trim();
+    const clientEmail = (nbSelClient?.email || document.getElementById('nb-nc-email').value).trim();
+    const clientAddress = (nbSelClient?.address || document.getElementById('nb-nc-addr').value).trim();
     const payment = document.getElementById('nb-pay').value;
-
+    const notes = document.getElementById('nb-notes').value.trim();
     const items = [];
 
     document.querySelectorAll('#nb-items .bill-item-row').forEach(row => {
       const name = row.querySelector('select').value;
       const staff = row.querySelectorAll('select')[1].value;
-
       const price = parseFloat(row.querySelector('.nbi-p').value || 0);
       const discount = parseFloat(row.querySelector('.nbi-d').value || 0);
       const net = price - (price * discount / 100);
 
-      items.push({
-        service_name: name,
-        staff,
-        price,
-        discount,
-        final_price: net
-      });
+      if(name){
+        items.push({
+          service_name: name,
+          staff,
+          price,
+          discount,
+          final_price: net
+        });
+      }
     });
 
-    const total = items.reduce((sum, i) => sum + i.final_price, 0);
+    const total = items.reduce((sum, item) => sum + item.final_price, 0);
 
-    console.log("Payload:", { clientName, total, items });
+    if(!clientName){
+      alert("Client name is required");
+      return;
+    }
+    if(!nbSelClient && !clientPhone){
+      alert("Phone number is required for a new client");
+      return;
+    }
+    if(!items.length){
+      alert("Add at least one service or product");
+      return;
+    }
 
     const res = await fetch(`${BASE_URL}/api/bills`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         clientName,
-        client_id: null,
+        client_id: Number.isFinite(Number(nbSelClient?.id)) ? Number(nbSelClient.id) : null,
+        clientPhone,
+        clientEmail,
+        clientAddress,
         total,
+        payment,
+        notes,
         items
       })
     });
 
     const data = await res.json();
-
-    console.log("Saved:", data);
+    if(!res.ok) throw new Error(data.error || 'Save failed');
 
     if (data.success) {
-      alert("Bill saved successfully");
-
+      if(clientPhone){
+        syncClientIntoMemory({
+          id:data.clientId || nbSelClient?.id,
+          name:data.clientName || clientName,
+          phone:clientPhone,
+          email:clientEmail,
+          address:clientAddress,
+          visits:(nbSelClient?.visits || 0) + 1,
+          total_spent:(nbSelClient?.totalSpent || 0) + total,
+          last_visit:today()
+        });
+      }
       closeModal('modal-new-bill');
-
-      // 🔥 CRITICAL FIX
-      await loadBillsFromBackend();   // <-- THIS WAS YOUR MISSING PIECE
+      pendingSatisfactionBillId = data.billId;
+      await loadClientsFromBackend();
+      await loadBillsFromBackend();
+      openModal('modal-satisfaction');
     }
-
   } catch (err) {
     console.error("SAVE ERROR:", err);
     alert("Error saving bill");
@@ -1097,16 +1328,74 @@ function upsertClient(d){
 }
 function quickBillClient(id){nbSelClient=null;openModal('modal-new-bill');setTimeout(()=>nbSelectClient(id),100)}
 
+function renderClientsPage(){
+  filterClientsPage();
+}
+
+function filterClientsPage(){
+  const q=(document.getElementById('client-search-q')?.value||'').toLowerCase();
+  const f=DB.clients.filter(c=>!q||(c.name.toLowerCase().includes(q)||c.phone.includes(q)));
+  const tbody=document.getElementById('clients-page-tbody');
+  tbody.innerHTML=f.map(c=>`<tr>
+    <td><strong>${c.name}</strong>${isClientInactive(c)?'<div style="font-size:10px;color:var(--amber);margin-top:2px">Follow up due</div>':''}</td><td>${c.phone}</td><td>${c.email||'â€”'}</td>
+    <td>${c.visits||0}</td><td>${fmt(c.totalSpent||0)}</td><td>${fmtD(c.lastVisit)}</td>
+    <td>${favSvc(c.id)}</td>
+    <td><button class="btn btn-sm btn-outline" onclick="quickBillClient('${c.id}')">Bill</button></td>
+  </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:18px">No clients</td></tr>';
+}
+
+async function saveClient(){
+  const payload={
+    name:document.getElementById('ac-name').value.trim(),
+    phone:document.getElementById('ac-phone').value.trim(),
+    email:document.getElementById('ac-email').value.trim(),
+    address:document.getElementById('ac-addr').value.trim(),
+    dob:document.getElementById('ac-dob').value
+  };
+  if(!payload.name||!payload.phone){toast('Name and phone required');return}
+  try{
+    const res=await fetch(`${BASE_URL}/api/clients`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error || 'Client save failed');
+    syncClientIntoMemory(data.client);
+    closeModal('modal-add-client');
+    renderClientsPage();
+    toast('Client saved');
+  }catch(err){
+    console.error('CLIENT SAVE ERROR:',err);
+    toast('Unable to save client');
+  }
+}
+
 // ════════════════════════════════════════════════
 // STAFF PAGE
 // ════════════════════════════════════════════════
+function applyStaffDateRange(){
+  const range=document.getElementById('staff-date-range')?.value||'month';
+  document.getElementById('staff-from-wrap').style.display=range==='range'?'flex':'none';
+  document.getElementById('staff-to-wrap').style.display=range==='range'?'flex':'none';
+  document.getElementById('staff-single-wrap').style.display=range==='single'?'flex':'none';
+  renderStaffPage();
+}
+
 function renderStaffPage(){
   const container=document.getElementById('staff-cards');
-  const m=thisMonth();
+  if(!container) return;
+  const range=document.getElementById('staff-date-range')?.value||'month';
+  const from=document.getElementById('staff-from-date')?.value;
+  const to=document.getElementById('staff-to-date')?.value;
+  const single=document.getElementById('staff-single-date')?.value;
+  const scopedBills=getBillsForDateFilter(range,from,to,single);
   container.innerHTML=DB.staff.map(s=>{
-    const items=DB.bills.filter(b=>b.date.startsWith(m)).flatMap(b=>b.items.filter(i=>i.staff===s.name));
-    const total=items.reduce((x,i)=>x+i.net,0),count=items.length;
-    const tgt=s.monthlyTarget||0,pct=tgt>0?Math.min(100,(total/tgt)*100):0;
+    const items=scopedBills.flatMap(b=>b.items.filter(i=>i.staff===s.name));
+    const total=items.reduce((x,i)=>x+i.net,0);
+    const count=items.length;
+    const tgt=s.monthlyTarget||0;
+    const pct=tgt>0?Math.min(100,(total/tgt)*100):0;
     const todayItems=DB.bills.filter(b=>b.date===today()).flatMap(b=>b.items.filter(i=>i.staff===s.name));
     const todayTotal=todayItems.reduce((x,i)=>x+i.net,0);
     return`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px">
@@ -1115,11 +1404,11 @@ function renderStaffPage(){
         <div><div style="font-size:14px;font-weight:500">${s.name}</div><div style="font-size:11px;color:var(--text3)">${s.role}</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-        ${[['Today',fmt(todayTotal)],['Month',fmt(total)],['Services',count]].map(([l,v])=>`<div style="background:var(--bg4);border-radius:6px;padding:8px;text-align:center"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">${l}</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:var(--text)">${v}</div></div>`).join('')}
+        ${[['Today',fmt(todayTotal)],['Selected',fmt(total)],['Services',count]].map(([l,v])=>`<div style="background:var(--bg4);border-radius:6px;padding:8px;text-align:center"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">${l}</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:var(--text)">${v}</div></div>`).join('')}
       </div>
       <div style="font-size:11px;color:var(--text3);display:flex;justify-content:space-between;margin-bottom:4px"><span>Monthly Target</span><span style="color:var(--amber)">${fmt(total)} / ${fmt(tgt)}</span></div>
       <div style="background:var(--bg4);border-radius:20px;height:6px;overflow:hidden"><div style="height:100%;border-radius:20px;background:${pct>=100?'var(--green)':'var(--rose)'};width:${pct}%"></div></div>
-      <div style="font-size:10px;color:var(--text3);margin-top:3px">${pct.toFixed(1)}%${pct>=100?' ✓ Hit!':''}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">${pct.toFixed(1)}%${pct>=100?' âœ“ Hit!':''}</div>
     </div>`;
   }).join('');
 }
@@ -1227,6 +1516,36 @@ function showMenu(p){showPage(p)}
   document.addEventListener('mouseup',()=>{dragging=false;document.body.style.cursor='';document.body.style.userSelect=''});
 })();
 
+async function saveSatisfaction(value){
+  if(!pendingSatisfactionBillId){
+    closeModal('modal-satisfaction');
+    return;
+  }
+  try{
+    const res=await fetch(`${BASE_URL}/api/bills/${pendingSatisfactionBillId}/satisfaction`,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({satisfaction:value})
+    });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error || 'Unable to save satisfaction');
+    const bill=DB.bills.find(b=>String(b.id)===String(pendingSatisfactionBillId));
+    if(bill) bill.satisfaction=value;
+    pendingSatisfactionBillId=null;
+    closeModal('modal-satisfaction');
+    toast('Satisfaction saved');
+  }catch(err){
+    console.error('SATISFACTION SAVE ERROR:',err);
+    alert('Unable to save satisfaction');
+  }
+}
+
+async function initializeApp(){
+  await loadClientsFromBackend();
+  await loadBillsFromBackend();
+  renderClientsPage();
+}
+
 // ════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════
@@ -1239,12 +1558,17 @@ document.querySelectorAll('[onclick]').forEach(el=>{if(el.getAttribute('onclick'
 document.getElementById('from-date').value=today();
 document.getElementById('to-date').value=today();
 document.getElementById('single-date').value=today();
+document.getElementById('staff-from-date').value=today();
+document.getElementById('staff-to-date').value=today();
+document.getElementById('staff-single-date').value=today();
 
 // Initial render
 applyDateRange();
+applyStaffDateRange();
 window.onload = () => {
-  loadBillsFromBackend();
+  initializeApp();
 };
 </script>
 </body>
 </html>
+
